@@ -1,0 +1,32 @@
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, recall_score, f1_score
+import numpy as np
+
+class SU_CTM:
+    def __init__(self):
+        print("SU-CTM v4.0 inicializado – Buscando vida en Marte desde Durango")
+        self.mdi = __import__('mars_mobius.mdi').mdi.MDI()
+
+    def run(self, data):
+        self.mdi.load_dataset("marte", data)
+        self.mdi.preprocess_dataset("marte")
+        processed = self.mdi.datasets["marte"]['processed']
+        
+        features = np.column_stack([processed[c] for c in processed.keys()])
+        # Etiquetas simples pero físicas
+        agua = (features[:,0] > 0.65).astype(int) & (features[:,1] > 0.6).astype(int)
+        vida = agua & (features[:,3] > 0.7).astype(int)
+
+        if vida.sum() == 0:
+            print("No se detectaron zonas de vida en estos datos sintéticos")
+            return
+
+        X_train, X_test, y_train, y_test = train_test_split(features, vida, test_size=0.2, random_state=42)
+        model = RandomForestClassifier(n_estimators=50, random_state=42)
+        model.fit(X_train, y_train)
+        pred = model.predict(X_test)
+        print(f"F1-score detección de vida: {f1_score(y_test, pred):.3f}")
